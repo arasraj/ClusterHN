@@ -38,27 +38,53 @@ def download_pages():
       c = urllib2.urlopen(link)
       data = c.read()
       f = open('pages/'+str(i), 'w')
+      i+=1
       f.write(data)
       f.close()
     except Exception:
       pass
-    i+=1
 
 def index():
   doc_terms = parsepage()
-  term_freq = {}
-  allterms = []
+  #term_freq = {}
+  term_freq = []
+  allterms = {}
+  count = 0
   for doc, terms in doc_terms.items():
     freq = defaultdict(lambda: 0)
     for term in terms:
       freq[term] += 1
       if term not in allterms:
-        allterms.append(term)
-    term_freq[doc] = freq
+        allterms[term]=count
+        count += 1
+    #term_freq[doc] = freq
+    term_freq.append(freq)
+
+  #allterms = dict(enumerate(allterms))
   return (allterms, term_freq)
   
 def simmatrix():
-  pass
+  matrix = []
+  allterms, term_freq = index()
+  print (len(allterms))
+
+  for i in range(len(term_freq)):
+    tmp = []
+    vec1 = create_vec(term_freq[i], allterms)
+    for j in range(i+1,len(term_freq)):
+      vec2 = create_vec(term_freq[j], allterms)
+      #print vec1,vec2
+      tmp.append(pearson_sim(vec1, vec2))
+    matrix.append(tmp)
+  print matrix
+  return matrix
+    	  
+def create_vec(tf_dict, allterms):
+  vec = [0]*len(allterms)
+  for key,value in tf_dict.items():
+  	vec[allterms[key]] = value
+  return vec
+
 
 #pearson correl unoptimized
 def pearson_sim(vec1, vec2):
@@ -85,16 +111,22 @@ def parsepage():
   for htmldoc in htmldocs:
     html = open('page/'+htmldoc, 'r').readlines();
     #its deprecated...i know
-    p = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder('beautifulsoup'))
-    tree = p.parse(html)
+    try:
+      print htmldoc
+      p = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder('beautifulsoup'))
+      tree = p.parse(html)
+    except:
+      print 'error parsing %s' % htmldoc
+      continue
+
     data = [p.text.lower() for p in tree.findAll('p')]
     unstemmed_words = [word for word in words.split(''.join(data)) 
                             if word != '' and word not in stopwords]
     stemmed_words = [pstemmer.stem(word,0,len(word)-1) for word in unstemmed_words]
     parsed_html[int(htmldoc)] = stemmed_words
-
   #print parsed_html
   return parsed_html
 
 if __name__ == '__main__':
 	#index()
+	simmatrix()
