@@ -1,7 +1,7 @@
 from math import sqrt
 from collections import defaultdict
 
-class Clustring:
+class Clustering:
 
   def __init__(self):
     pass
@@ -11,7 +11,7 @@ class Clustring:
       Performs hierarchical agglomerative clustering based on centroids.
     """
     #create term vectors; allwords length dimensions
-    term_vecs = [(doc_id, create_vec(terms, allterms)) for doc_id, terms in doc_term_index.items()]
+    term_vecs = [(doc_id, self.create_vec(terms, allterms)) for doc_id, terms in doc_term_index.items()]
     
     clusters = [] #list of all clusters
     mapping = {}
@@ -36,7 +36,7 @@ class Clustring:
           clust2 = clusters[j]
           #used cache here instead of sim matrix bc of constant insertions/deletions
           if (clust1.id, clust2.id) not in distances:
-            distances[(clust1.id, clust2.id)] = pearson_sim(clust1.vec, clust2.vec)
+            distances[(clust1.id, clust2.id)] = self.pearson_sim(clust1.vec, clust2.vec)
           dist = distances[(clust1.id, clust2.id)]
 
           if dist < leastsofar:
@@ -45,7 +45,7 @@ class Clustring:
         
       #find the dimension values for the newly created vector; 
       #in this class it is the centroid of the two closest pairs of clusters
-      centroid = merge(clusters[least_item[0]].vec, clusters[least_item[1]].vec)
+      centroid = self.merge(clusters[least_item[0]].vec, clusters[least_item[1]].vec)
       new_cluster = Cluster(id=non_leaf_id, vec=centroid, l_child=clusters[least_item[0]], 
                             r_child=clusters[least_item[1]], distance=dist)
 
@@ -78,28 +78,25 @@ class Clustring:
       clust_left = None
 
       if cluster.l_child != None:
-        clust_left = subclusters(cluster.l_child, threshold)
+        clust_left = self.subclusters(cluster.l_child, threshold)
       if cluster.r_child != None:
-        clust_right = subclusters(cluster.r_child, threshold)
+        clust_right = self.subclusters(cluster.r_child, threshold)
       
       #returns list of relevant subclusters
       return clust_left + clust_right
 
 
-  def display(self, cluster, mapping, n=0):
+  def subcluster_items(self, cluster, mapping, titles, n=0):
     #preorder traversal
-    for i in range(n): print ' ',
-    if cluster.id < 0:
-      print '-'
+    if cluster.id >= 0:
+    	return [cluster.id]
     else:
-      print mapping[cluster.id]
-
-    #if (cluster.l_child == None or cluster.r_child == None):
-    #	print mapping[cluster.id]
-    #else:
-    if cluster.l_child != None: display(cluster.l_child, mapping,n=n+1)
-    #print cluster.id
-    if cluster.r_child != None: display(cluster.r_child, mapping,n=n+1)
+    #print titles[mapping[cluster.id]][1], titles[mapping[cluster.id]][0]
+      if cluster.l_child != None: 
+        l_items = self.subcluster_items(cluster.l_child, mapping, titles, n=n+1)
+      if cluster.r_child != None: 
+        r_items = self.subcluster_items(cluster.r_child, mapping, titles, n=n+1)
+      return l_items + r_items
 
 
   #def simmatrix(self):
@@ -153,10 +150,5 @@ class Cluster:
     self.distance = distance
     self.id = id
 
-if __name__ == '__main__':
-  clusters,mapping = hcluster()
-  c = subclusters(clusters[0], 0.8)
-  print '##################'
-  for x in c:
-    display(x, mapping)
-    print '***'
+
+

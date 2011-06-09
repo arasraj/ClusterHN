@@ -7,19 +7,17 @@ from collections import defaultdict
 from html5lib import treebuilders
 
 
-class DataObtainer:
+class Retriever:
 
   def __init__(self):
-    self.docs_to_title = None
-    self.index = None
-    self.allwords = None
-
+    pass
 
   def retrieve(self):
-    links = self.scrape_links()
-    download_pages(links)
+    #links = self.scrape_links()
+    #self.download_pages(links)
     parsed_htmls = self.parser()
-    self.allwords, self.index, self.doc_to_title = indexer(parsed_htmls)
+    allwords, index, doc_to_title = self.indexer(parsed_htmls)
+    return allwords, index, doc_to_title
     
   
   def scrape_links(self):
@@ -61,6 +59,7 @@ class DataObtainer:
         data = c.read()
         f = open('pages/'+str(i), 'w')
         i+=1
+        f.write('%s\n' % link)
         f.write(data)
         f.close()
       except Exception:
@@ -85,27 +84,33 @@ class DataObtainer:
     pstemmer = stemmer.PorterStemmer()
     
 
-    htmldocs = os.listdir('page/') #grap all html docs and parse them
+    htmldocs = os.listdir('pages/') #grap all html docs and parse them
     words_splitter = re.compile(r'\W*') #split on non words
     for htmldoc in htmldocs:
-      html = open('page/'+htmldoc, 'r').readlines();
+      f = open('pages/'+htmldoc, 'r')
+      link = f.readline()
+      html = f.readlines()
+
       try:
         print htmldoc
         p = html5lib.HTMLParser(tree=treebuilders.getTreeBuilder('beautifulsoup'))
         tree = p.parse(html)
       except:
-        os.remove(os.path.join('page', htmldoc))
+        os.remove(os.path.join('pages', htmldoc))
         print 'error parsing %s' % htmldoc
         continue
 
-      title = tree.findAll('title')[0].text
+      title = tree.findAll('title')
+      if title: title = title[0].text
+      else: title = ''
+
       #grab text from p tags
       data = [p.text.lower() for p in tree.findAll('p')]
       #remove stopwords
       unstemmed_words = [word for word in words_splitter.split(''.join(data)) 
                               if word != '' and word not in stopwords]
       stemmed_words = [pstemmer.stem(word,0,len(word)-1) for word in unstemmed_words]
-      parsed_html[(title,int(htmldoc))] = stemmed_words
+      parsed_html[(title,int(htmldoc),link)] = stemmed_words
 
     return parsed_html
     
@@ -122,8 +127,7 @@ class DataObtainer:
     count = 0
     print ''
     for doc, terms in sorted(doc_terms_dict.items(), key=lambda doc: doc[1]): 
-      print doc,i
-      doc_titles[doc[1]] = doc[0]
+      doc_titles[doc[1]] = (doc[0], doc[2][:-1]) #get doc title, id, and link
       freq = defaultdict(lambda: 0)
 
       #get tf
@@ -132,7 +136,7 @@ class DataObtainer:
         if term not in allterms:
           allterms[term]=count
           count += 1
-      term_freq[doc] = freq
+      term_freq[doc[1]] = freq
 
     #allterms = dict(enumerate(allterms))
     return (allterms, term_freq, doc_titles)
