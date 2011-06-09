@@ -21,7 +21,7 @@ class UpdateCache(threading.Thread):
       allwords, index, doc_to_title = r.retrieve()
       c = Clustering()
       root, cluster_doc_map = c.hcluster(allwords, index)
-      relevant_clusters = c.subclusters(root, 0.82)
+      relevant_clusters = c.subclusters(root, 0.888)
       singles = []
       for cluster in relevant_clusters:
         item_c = c.subcluster_items(cluster, cluster_doc_map, doc_to_title)
@@ -35,6 +35,7 @@ class UpdateCache(threading.Thread):
         html += '<a href="%s">%s</a><br>' % (doc_to_title[cluster_doc_map[item]][1],
                                               doc_to_title[cluster_doc_map[item]][0])
       html += '</body></html>'
+      global cache
       cache = html
       print 'done refreshing...'
       time.sleep(2700)
@@ -42,6 +43,7 @@ class UpdateCache(threading.Thread):
 
 class MainHandler(tornado.web.RequestHandler):
   def get(self):
+    global cache
     if cache:
     	self.write(cache)
     	return
@@ -51,7 +53,7 @@ class MainHandler(tornado.web.RequestHandler):
     allwords, index, doc_to_title = r.retrieve()
     c = Clustering()
     root, cluster_doc_map = c.hcluster(allwords, index)
-    relevant_clusters = c.subclusters(root, 0.82)
+    relevant_clusters = c.subclusters(root, 0.888)
     singles = []
     for cluster in relevant_clusters:
       item_c = c.subcluster_items(cluster, cluster_doc_map, doc_to_title)

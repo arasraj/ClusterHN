@@ -13,8 +13,8 @@ class Retriever:
     pass
 
   def retrieve(self):
-    #links = self.scrape_links()
-    #self.download_pages(links)
+    links = self.scrape_links()
+    self.download_pages(links)
     parsed_htmls = self.parser()
     allwords, index, doc_to_title = self.indexer(parsed_htmls)
     return allwords, index, doc_to_title

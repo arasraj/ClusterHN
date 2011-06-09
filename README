@@ -1,1 +1,3 @@
 ClusterHN
+
+This application performs hierarchical agglomerative clustering based on the distances of cluster centroids. Information is obtained by scraping news links from HN.  Pearson correlation is used as the "distance" metric. A simple Tornado based server powers the application which updates is cache every 45 mintues with the most uptodate clusters.
